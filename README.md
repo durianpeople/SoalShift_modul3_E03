@@ -46,6 +46,318 @@ void *thread(void *arg)
 }
 ```
 
+## SOAL 2
+
+Untuk soal no 2 ini, menggunakan 4 program, dengan rincian 1 server penjual, 1 server pembeli, 1 client penjual, 1 client pembeli
+
+untuk 2 server mendeklarasikan thread, socket, value yang akan di share, buffer, dan string b untuk pembanding
+
+server penjual
+```c
+pthread_t tid[2];
+int *value;
+int new_socket, valread;
+char buffer[1024] = {0};
+char b[] = "tambah";
+```
+
+server pembeli
+```c
+pthread_t tid[2];
+int *value;
+int new_socket, valread;
+char buffer[1024] = {0};
+char b[] = "beli";
+```
+
+untuk 2 server menggunakan shared memory untuk membagikan value dari stok barang
+dengan cara
+```c
+int shmid = shmget(key, sizeof(int), IPC_CREAT | 0666);
+value = shmat(shmid, NULL, 0);
+```
+untuk deklarasi socket, address seperti di modul
+
+untuk server pembeli hanya bisa mengurangi stock, jika client pembeli memberikan pesan "beli", dengan code seperti dibawah ini, tetapi dengan syarat jika stock lebih dari 0, maka transaksi berhasil, jika stock kurang dari sama dengan 0, maka transaksi gagal
+
+server pembeli
+```c
+valread = read( new_socket , buffer, 1024);
+        i = strcmp(buffer,b);
+        if (*value > 0 && i == 0){
+
+        *value = *value - 1;
+        send(new_socket , berhasil , strlen(berhasil), 0 );
+        printf("terjadi pengurangan stok barang sebanyak 1 menjadi = %d\n", *value);
+        exit(0);
+        } 
+        else if (*value <= 0 && i == 0){
+        valread = read( new_socket , buffer, 1024);
+        printf("%s\n",buffer );
+        send(new_socket , gagal , strlen(gagal), 0 );
+        exit(0);
+        }
+        else {
+            exit(0);
+        }
+```
+
+untuk sisi client pembeli, user penginput sebuah string, tetapi hanya string "beli" lah yang dikirim ke server, untuk kata selain "beli", akan memberikan pesan error
+
+client pembeli
+```c
+scanf("%[^\n]%*c", a); 
+    i = strcmp(a,b);
+    // printf("%d\n", i);
+  if(i == 0){
+        send(sock , a , strlen(a) , 0 );
+    
+  }
+  if(i != 0 ){
+      printf("Error input selain kata beli, coba lagi!\n");
+        exit(0);
+  }
+  
+    // printf("Hello message sent\n");
+    valread = read( sock , buffer, 1024);
+    printf("%s\n",buffer );
+```
+
+untuk server penjual menggunakan 2 thread, digunakan untuk menghitung setiap 5 detik untuk menampilkan stok barang, dan untuk mengurangi stok barang yang ada
+
+```c
+if(pthread_equal(id,tid[0])) //thread untuk menjalankan counter
+    {
+        while(1){
+            printf("Stock Barang = %d\n",*value);
+            sleep(5);
+        }
+    }
+    else if(pthread_equal(id,tid[1])) // thread menampilkan gambar
+    {
+        valread = read( new_socket , buffer, 1024);
+        i = strcmp(buffer,b);
+        if (i == 0){
+
+        *value = *value + 1;
+        printf("terjadi penambahan stok barang sebanyak 1 menjadi = %d\n", *value);
+        exit(0);
+        } 
+        else {
+            exit(0);
+        }
+    }
+```
+
+code untuk pembuatan thread
+```c
+int i=0;
+        int err;
+        while(i<2) // loop sejumlah thread
+        {
+            err=pthread_create(&(tid[i]),NULL,&playandcount,NULL); //membuat thread
+            if(err!=0) //cek error
+            {
+                printf("\n can't create thread : [%s]",strerror(err));
+            }
+            else
+            {
+                printf("\n create thread success\n");
+            }
+            i++;
+        }
+        pthread_join(tid[0],NULL);
+        pthread_join(tid[1],NULL);
+        exit(0);
+```
+
+untuk sisi client penjual, user penginput sebuah string, tetapi hanya string "tambah" yang dikirim ke server, untuk kata selain "tambah", akan memberikan pesan error
+
+```c
+scanf("%[^\n]%*c", a); 
+    i = strcmp(a,b);
+    printf("%d\n", i);
+    // printf("%d\n", i);
+    if(i == 0){
+        send(sock , a , strlen(a) , 0 );
+        
+    }
+    if(i != 0 ){
+        printf("Error input selain kata tambah, coba lagi!\n");
+        exit(0);
+    }
+```
+
+## SOAL 3
+
+deklarasi variabel
+
+```c
+int WakeUp_Status;
+int Spirit_Status;
+pthread_t tid[3];
+int choice;
+int flag_agmal;
+int flag_iraj;
+int flag = 0;
+int status_agmal;
+int status_iraj;
+```
+
+WakeUp_Status digunakan untuk menyimpan nilai WakeUp_Status dari agmal
+Spirit_Status digunakan untuk menyimpan nilai Spirit_Status dari iraj
+pthread_t untuk mendeklarasikan thread
+choice digunakan untuk pemilihan fitur menu
+flag_agmal dan flag_iraj digunakan untuk menyimpan sudah berapa kali fungsi WakeUp_Status sama Spirit_Status telah dipanggil
+flag digunakan sebagai parameter thread mana yang akan melanjutkan tugasnya
+status_agmal dan status_iraj digunakan untuk kondisi sleep sebuah thread
+
+deklarasi 3 fungsi, yaitu status, WakeUp_Status, dan Spirit_Status
+
+```c
+void status(){
+  printf("Agmal WakeUp_Status = %d\n", WakeUp_Status);
+  printf("Iraj Spirit_Status = %d\n", Spirit_Status);
+}
+
+void agmal(){
+  WakeUp_Status = WakeUp_Status + 15;
+}
+
+void iraj(){
+  Spirit_Status = Spirit_Status - 20;
+}
+```
+
+definisi untuk thread 1, 2, dan 3
+
+```c
+if(pthread_equal(id,tid[0])) //thread status
+  {
+    while(1){
+      while(flag != 1){
+
+      }
+      status();
+      flag = 0;
+    }
+  }
+  else if(pthread_equal(id,tid[1])) // thread agmal
+  {
+    while(1){
+      while(flag != 2){
+
+      }
+      if (flag == 2){
+        if(flag_iraj >= 3){
+          flag_iraj = 0;
+          flag = 0;
+          status_agmal = 1;
+          sleep(10);
+          status_agmal = 0;
+          continue;
+        } else {
+          agmal();
+          if (WakeUp_Status >= 100){
+            printf("Agmal Terbangun,mereka bangun pagi dan berolahraga\n");
+            exit(0);
+          } else {
+            flag_agmal++;
+            flag = 0;
+          }
+        }
+      }
+      if (flag_agmal >= 3){
+        flag = 3;
+      }
+    }
+  }
+  else if(pthread_equal(id,tid[2])) // thread iraj
+  {
+    while(1){
+      while(flag != 3){
+
+      }
+      if (flag == 3){
+        if (flag_agmal >= 3){
+          flag_agmal = 0;
+          flag = 0;
+          status_iraj = 1;
+          sleep(10);
+          status_iraj = 0;
+          continue;
+        } else {
+          iraj();
+          if (Spirit_Status <= 0){
+            printf("Iraj ikut tidur, dan bangun kesiangan bersama Agmal\n");
+            exit(0);
+          }else{
+            flag_iraj++;
+            flag = 0;
+          }
+        }
+      }
+      if (flag_iraj >= 3){
+        flag = 2;
+      }
+    }
+  }
+```
+
+proses pembuatan thread
+
+```c
+int i = 0;
+  int err;
+  while(i<3) // loop sejumlah thread
+  {
+    err=pthread_create(&(tid[i]),NULL,&playandcount,NULL); //membuat thread
+    if(err!=0) //cek error
+    {
+      printf("\n can't create thread : [%s]",strerror(err));
+    }
+    else
+    {
+      printf("\n create thread success\n");
+    }
+    i++;
+  }
+```
+
+untuk program ini, saya menganalogikan thread status dengan flag 1, thread WakeUp_Status dengan flag 2, thread Spirit_Status dengan flag 3, dan saya menggunakan menu dengan flag 0 
+
+thread menu
+
+```c
+while(1){
+    while (flag != 0){}
+    printf("Pilih salah 1 menu dibawah!\n");
+    printf("1. All Status\n");
+    printf("2. Agmal Ayo Bangun\n");
+    printf("3. Iraj Ayo Tidur\n");
+    scanf("%d", &choice);
+    if(choice == 1){
+      flag = 1;
+    } else if(choice == 2) {
+      if(status_agmal == 0){
+        flag = 2;
+      }
+      else{ //ketika iraj dijalankan 3x
+        printf("Agmal Ayo Bangun disabled 10 s\n");
+        flag = 0;
+      }
+    } else {
+      if(status_iraj == 0){
+        flag = 3;
+      }
+      else{ //ketika agmal dijalankan 3x
+        printf("Fitur Iraj Ayo Tidur disabled 10 s\n");
+        flag = 0;
+      }
+    }
+  }
+```
+
 ## SOAL 4
 
 `int gid` digunakan untuk memisahkan peran thread.
