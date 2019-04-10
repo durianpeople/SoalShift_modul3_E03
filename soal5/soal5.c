@@ -36,9 +36,9 @@ typedef struct
     int delay;
 } action;
 
-status hunger = {200, 200, 5, 10};
-status hygiene = {100, 100, 10, 30};
-status health = {300, 300, -5, 10};
+status hunger = {200, 200, 5, 3};
+status hygiene = {100, 100, 10, 3};
+status health = {300, 300, -5, 3};
 int enemyHealth = 0;
 
 action food = {15, 10, 0};
